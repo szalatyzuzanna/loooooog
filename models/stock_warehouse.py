@@ -725,7 +725,7 @@ class Warehouse(models.Model):
         if user.notification_type == 'inbox':
             self.inbox_message(user, logged_user, scrap_lines, scrap_motive)
         else:
-            datetime_now = self.get_datetime_of_user_tz(user)
+            datetime_now = datetime.now()
             email_from = 'bot@example.com'
             email_to = self.env.user.company_id.inventory_loss_responsable_user_id.email_formatted
             scrap_lines_html = self.get_scrap_lines(scrap_lines, logged_user, datetime_now, scrap_motive)
@@ -744,19 +744,11 @@ class Warehouse(models.Model):
                 return
             self.env['mail.template'].browse(template_id).with_context(email_values).sudo().send_mail(
                 self.id, 
-                force_send=True,
-                email_values={
-                    'email_from': email_from, 
-                    'email_to': email_to, 
-                    'lang': user.lang, 
-                    'scrap_lines':scrap_lines_html, 
-                    'user': logged_user.name, 
-                    'datetime': datetime_now,
-                    }
+                force_send=True
                 )
 
     def get_scrap_lines(self, scrap_lines, logged_user, datetime_now, scrap_motive):
-        message_text = "A product was discarded by " + str(logged_user.name) + ' at ' + datetime_now + ':\n'
+        message_text = "A product was discarded by " + str(logged_user.name) + ' at ' + datetime.now().strftime("%Y-%m-%d %H:%M:%S") + ':\n'
         for scrap in scrap_lines:
             message_text += '- ' + _('Product: ') + ' ' + str(scrap.product_id.name) + '\n'
             if scrap.product_id.tracking != 'none':
@@ -773,7 +765,7 @@ class Warehouse(models.Model):
         if user.notification_type == 'inbox':
             self.inbox_message(user, logged_user, scrap_lines, scrap_motive)
         else:
-            datetime_now = self.get_datetime_of_user_tz(user)
+            datetime_now = datetime.now()
             email_from = 'bot@example.com'
             email_to = self.env.user.company_id.inventory_loss_responsable_user_id.email_formatted
             scrap_lines_html = self.get_scrap_inv_transfer_lines(scrap_lines, logged_user, datetime_now, scrap_motive)
@@ -813,37 +805,7 @@ class Warehouse(models.Model):
         message_text += '   - ' + str(scrap_motive) + '\r\n'
         return message_text
 
-    def get_datetime_of_user_tz(self, user):
-        tz = pytz.timezone(user.tz)
-        date_now = datetime.now(tz)
-
-        fix = 0
-        if tz in self.one_hour_less_tz:
-            fix = -1
-        elif tz in self.one_hour_more_tz:
-            fix = 1
-        elif tz in self.three_hours_more_tz:
-            fix = 3
-
-        hour_diff = int(date_now.strftime('%H')) + fix
-        
-        if hour_diff >= 0 and hour_diff <= 9:
-            hour_diff = '+0' + str(hour_diff)
-        elif hour_diff <= 0 and hour_diff >= -9:
-            hour_diff = '-0' + str(hour_diff)[1]
-        elif hour_diff >= 10:
-            hour_diff = '+' + str(hour_diff)
-
-        date = date_now.strftime('%Y:%m:%d')
-        year = date[0:4]
-        month = date[5:7]
-        day = date[8:10]
-
-        time = date_now.strftime('%H:%M')
-        hour = time[0:2]
-        minute = time[3:5]
-
-        return str(hour + ':' + minute + ' ' + day + '-' + month + '-' + year)
+   
 
     def inbox_message(self, user, logged_user, scrap_lines, scrap_motive):
         """
@@ -860,7 +822,7 @@ class Warehouse(models.Model):
             message_text += _('Several products have been discarded by ')
         message_text += str(logged_user.name)
         message_text += _(' at ')
-        message_text += self.get_datetime_of_user_tz(user)
+        message_text += datetime.now()
         message_text += ' :</span>'
         message_text += '<ul>'
         for scrap in scrap_lines:
